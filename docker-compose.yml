@@ -1,0 +1,39 @@
+version: '3'
+
+services:
+  haproxy:
+    build: ./haproxy
+    links:
+      - monsite.fr
+      - monsite2.fr
+    ports:
+      - "80:80"
+
+  monsite.fr:
+    image: wordpress
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: root
+
+  monsite2.fr:
+    image: wordpress
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: root
+
+  db:
+    image: mysql
+    restart: always
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+
+volumes:
+  db_data:
