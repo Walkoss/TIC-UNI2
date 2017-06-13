@@ -1,4 +1,4 @@
-version: '3'
+version: '3.1'
 
 services:
   haproxy:
@@ -8,32 +8,48 @@ services:
       - monsite2.fr
     ports:
       - "80:80"
+      - "443:443"
 
   monsite.fr:
-    image: wordpress
+    image: wordpress:latest
     depends_on:
       - db
     environment:
       WORDPRESS_DB_HOST: db:3306
-      WORDPRESS_DB_USER: root
-      WORDPRESS_DB_PASSWORD: root
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
 
   monsite2.fr:
-    image: wordpress
+    image: wordpress:latest
     depends_on:
       - db
     environment:
       WORDPRESS_DB_HOST: db:3306
-      WORDPRESS_DB_USER: root
-      WORDPRESS_DB_PASSWORD: root
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
 
   db:
-    image: mysql
-    restart: always
+    image: mysql:latest
     volumes:
       - db_data:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=root
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_root_password
+      - db_password
+
+secrets:
+  db_password:
+    file: ./credentials/mysql_password.txt
+  db_root_password:
+    file: ./credentials/mysql_root_password.txt
 
 volumes:
   db_data:

@@ -1,0 +1,40 @@
+UV TIC-UNI2
+
+Architecture:
+
+docker-compose.yml est le fichier qui va permettre de lancer les containers Docker et de les lier entre eux.
+Il y a 4 services configurés dessus:
+    - HAProxy -> il s'agit du load balancer qui va permettre de répartir la charge sur ses backend
+    - Deux containers wordpress
+    - et un container mysql pour gérer la base de données des deux services wordpress 
+
+Le service HAProxy est build à l'aide du fichier Dockerfile situé dans le répertoire './haproxy'
+Ce Dockerfile part de l'image officiel HAProxy et rajoute une configuration personnalisée et un package ssl-cert pour permettre de créer un certificat ssl auto-signé
+Le container associé expose les ports 80 (HTTP) et 443 (HTTPS) et possède un lien vers les deux containers wordpress pour pouvoir les ajouter en tant que backend
+
+Les services wordpress sont lançés grâce à l'image officiel wordpress
+Ils dépendent du service 'db' (base de données)
+
+Enfin le service db s'occupe de la base de données. Il est lançé à l'aide de l'image officiel mysql.
+Pour persister les données, un volume 'db_data' est crée.
+Enfin les credentials de la BDD sont fournis à l'aide de docker secret.
+Les credentials sont disponibles sous format txt dans le dossier './credentials'
+
+Setup:
+
+Un Makefile est disponible est contient des commandes utiles pour lancer le projet.
+`make help` pour la liste des commandes disponibles
+`make start` pour lancer le projet une première fournis
+
+HAProxy configuration:
+
+HAProxy redirige les requêtes HTTP en HTTPS à l'aide de la configuration suivante:
+`redirect scheme https if !{ ssl_fc }`
+
+Les attaques DDOS sont limités de la facon suivante:
+    - Pour les attaques de type Slowloris, `timeout http-request 5s` permet de bloquer l'attaque
+    - Un ensemble de règle sont aussi disponibles dans le fichier './haproxy/haproxy.conf' pour limiter le nombre de connexion par utilisateur
+
+Le certificat SSL est crée dès le build de l'image haproxy à l'aide du package `ssl-cert`
+
+Enfin la gestion des cookies se fait avec la règle `cookie` et permet à un utilisateur authentifié de le rester malgré le balancement des requêtes.
